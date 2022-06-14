@@ -7,7 +7,7 @@ import java.util.stream.IntStream;
 
 public class Constants {
 
-  public static final Integer DECIMAL_FORMAT_FRACTION_DIGITS = 2; // Just this need to be modified.
+  public static final Integer DECIMAL_FORMAT_FRACTION_DIGITS = 2; // Just this needs to be modified.
   public static final Integer DECIMAL_FORMAT_DIFFERENCE_FRACTION_DIGITS =
       DECIMAL_FORMAT_FRACTION_DIGITS + 1;
   public static final BigDecimal NIL = new BigDecimal("0.00");
