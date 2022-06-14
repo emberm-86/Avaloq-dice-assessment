@@ -83,14 +83,14 @@ class ApplicationTests {
     Map<String, List<Distribution>> distributions = body.stream()
         .collect(Collectors.toMap(GetResult::getId, GetResult::getRelDists));
 
-    long calc = distributions.entrySet().stream()
+    long hundredSumCount = distributions.entrySet().stream()
         .filter(sumDistItem -> {
           List<BigDecimal> values = sumDistItem.getValue().stream().map(Distribution::getRelDist)
               .map(BigDecimal::new).collect(Collectors.toList());
           BigDecimal bigDecimal = sumDist(values);
           return bigDecimal.compareTo(new BigDecimal("100.00")) == 0;
         }).count();
-    assertEquals((int)calc, distributions.entrySet().size());
+    assertEquals((int)hundredSumCount, distributions.entrySet().size());
   }
 
   @ParameterizedTest
