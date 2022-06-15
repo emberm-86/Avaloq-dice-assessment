@@ -163,19 +163,9 @@ public class MongoDbService {
       if (distIt.hasNext()) {
         Entry<Integer, Pair<BigDecimal, BigDecimal>> next = distIt.next();
         BigDecimal oldDistVal = distributionMap.get(distSum.getKey()).get(next.getKey());
-        BigDecimal newDistVal = oldDistVal;
-        BigDecimal newDistValPlusOneScale = next.getValue().getLeft();
-        BigDecimal ceiling = newDistValPlusOneScale.setScale(DECIMAL_FORMAT_FRACTION_DIGITS,
-            RoundingMode.CEILING);
-        BigDecimal floor = newDistValPlusOneScale.setScale(DECIMAL_FORMAT_FRACTION_DIGITS,
-            RoundingMode.FLOOR);
-        if (!up && newDistValPlusOneScale.compareTo(floor) > 0
-            && oldDistVal.compareTo(ceiling) == 0) {
-          newDistVal = floor;
-        } else if (up && newDistValPlusOneScale.compareTo(ceiling) < 0
-            && oldDistVal.compareTo(floor) == 0) {
-          newDistVal = ceiling;
-        }
+        BigDecimal newDistVal = next.getValue().getLeft().add(next.getValue().getRight())
+            .setScale(2, RoundingMode.HALF_UP);
+
         distributionMap.get(distSum.getKey()).put(next.getKey(), newDistVal);
         difference = newDistVal.subtract(oldDistVal, MATH_CONTEXT);
       }
