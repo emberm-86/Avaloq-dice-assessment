@@ -136,28 +136,28 @@ public class MongoDbService {
 
     sums.entrySet().forEach(distSum -> {
       orderAndCorrection(distributionMap, differencesToLower, distSum,
-          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, false, comparator);
+          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, comparator);
 
       orderAndCorrection(distributionMap, differencesToUpper, distSum,
-          bigDecimal -> bigDecimal.compareTo(HUNDRED) < 0, true, comparator);
+          bigDecimal -> bigDecimal.compareTo(HUNDRED) < 0, comparator);
     });
   }
 
   private void orderAndCorrection(Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differences,
-      Map.Entry<String, BigDecimal> distSum, Predicate<BigDecimal> predicate, boolean up,
+      Map.Entry<String, BigDecimal> distSum, Predicate<BigDecimal> predicate,
       Comparator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> comparator) {
     Map<Integer, Pair<BigDecimal, BigDecimal>> boundDists = orderBoundDists(
         differences.get(distSum.getKey()), comparator);
     Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> boundDistIt = boundDists.entrySet()
         .iterator();
-    correction(distributionMap, distSum, boundDistIt, predicate, up);
+    correction(distributionMap, distSum, boundDistIt, predicate);
   }
 
   private void correction(Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map.Entry<String, BigDecimal> distSum,
       Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> distIt,
-      Predicate<BigDecimal> predicate, boolean up) {
+      Predicate<BigDecimal> predicate) {
     while (predicate.test(distSum.getValue())) {
       BigDecimal difference = NIL;
       if (distIt.hasNext()) {
