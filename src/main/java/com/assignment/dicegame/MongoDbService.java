@@ -25,7 +25,7 @@ import static com.assignment.dicegame.Constants.DECIMAL_FORMAT_FRACTION_DIGITS;
 import static com.assignment.dicegame.Constants.HUNDRED;
 import static com.assignment.dicegame.Constants.MATH_CONTEXT;
 import static com.assignment.dicegame.Constants.MATH_CONTEXT_DIFF;
-import static com.assignment.dicegame.Constants.STEP;
+import static com.assignment.dicegame.Constants.NIL;
 import static com.assignment.dicegame.Util.calculateDifference;
 import static com.assignment.dicegame.Util.createId;
 import static com.assignment.dicegame.Util.createRollEntity;
@@ -118,10 +118,10 @@ public class MongoDbService {
       BigDecimal upperBound = val.setScale(DECIMAL_FORMAT_FRACTION_DIGITS, RoundingMode.CEILING);
       BigDecimal lowerBound = val.setScale(DECIMAL_FORMAT_FRACTION_DIGITS, RoundingMode.FLOOR);
 
-      calculateDifference(rollConfigurationKey, rollValueAsKey, newDistribution, differencesToUpper,
+      calculateDifference(rollConfigurationKey, rollValueAsKey, val, differencesToUpper,
           upperBound.subtract(val));
 
-      calculateDifference(rollConfigurationKey, rollValueAsKey, newDistribution, differencesToLower,
+      calculateDifference(rollConfigurationKey, rollValueAsKey, val, differencesToLower,
           val.subtract(lowerBound));
     }
   }
@@ -136,36 +136,50 @@ public class MongoDbService {
 
     sums.entrySet().forEach(distSum -> {
       orderAndCorrection(distributionMap, differencesToLower, distSum,
-          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, STEP.negate(), comparator);
+          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, false, comparator);
 
       orderAndCorrection(distributionMap, differencesToUpper, distSum,
-          bigDecimal -> bigDecimal.compareTo(HUNDRED) < 0, STEP, comparator);
+          bigDecimal -> bigDecimal.compareTo(HUNDRED) < 0, true, comparator);
     });
   }
 
   private void orderAndCorrection(Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differences,
-      Map.Entry<String, BigDecimal> distSum, Predicate<BigDecimal> predicate, BigDecimal step,
+      Map.Entry<String, BigDecimal> distSum, Predicate<BigDecimal> predicate, boolean up,
       Comparator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> comparator) {
     Map<Integer, Pair<BigDecimal, BigDecimal>> boundDists = orderBoundDists(
         differences.get(distSum.getKey()), comparator);
     Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> boundDistIt = boundDists.entrySet()
         .iterator();
-    correction(distributionMap, distSum, boundDistIt, predicate, step);
+    correction(distributionMap, distSum, boundDistIt, predicate, up);
   }
 
   private void correction(Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map.Entry<String, BigDecimal> distSum,
       Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> distIt,
-      Predicate<BigDecimal> predicate, BigDecimal step) {
+      Predicate<BigDecimal> predicate, boolean up) {
     while (predicate.test(distSum.getValue())) {
+      BigDecimal difference = NIL;
       if (distIt.hasNext()) {
         Entry<Integer, Pair<BigDecimal, BigDecimal>> next = distIt.next();
-        BigDecimal oldDistValue = distributionMap.get(distSum.getKey()).get(next.getKey());
-        BigDecimal newDistValue = oldDistValue.add(step, MATH_CONTEXT);
-        distributionMap.get(distSum.getKey()).put(next.getKey(), newDistValue);
+        BigDecimal oldDistVal = distributionMap.get(distSum.getKey()).get(next.getKey());
+        BigDecimal newDistVal = oldDistVal;
+        BigDecimal newDistValPlusOneScale = next.getValue().getLeft();
+        BigDecimal ceiling = newDistValPlusOneScale.setScale(DECIMAL_FORMAT_FRACTION_DIGITS,
+            RoundingMode.CEILING);
+        BigDecimal floor = newDistValPlusOneScale.setScale(DECIMAL_FORMAT_FRACTION_DIGITS,
+            RoundingMode.FLOOR);
+        if (!up && newDistValPlusOneScale.compareTo(floor) > 0
+            && oldDistVal.compareTo(ceiling) == 0) {
+          newDistVal = floor;
+        } else if (up && newDistValPlusOneScale.compareTo(ceiling) < 0
+            && oldDistVal.compareTo(floor) == 0) {
+          newDistVal = ceiling;
+        }
+        distributionMap.get(distSum.getKey()).put(next.getKey(), newDistVal);
+        difference = newDistVal.subtract(oldDistVal, MATH_CONTEXT);
       }
-      distSum.setValue(distSum.getValue().add(step, MATH_CONTEXT_DIFF));
+      distSum.setValue(distSum.getValue().add(difference, MATH_CONTEXT_DIFF));
     }
   }
 
