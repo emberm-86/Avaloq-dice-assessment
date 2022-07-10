@@ -1,6 +1,7 @@
 package com.assignment.dicegame;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,17 +62,10 @@ class ApplicationTests {
         .forEach(i -> assertTrue(thrownValues.get(i) >= 3 && thrownValues.get(i) <= 18));
   }
 
-  @Test
-  void testGetRollsWithDistribution() {
-    Request request1 = createRollRequest(683209, 6, 3);
-    Request request2 = createRollRequest(912898, 4, 2);
-    Request request3 = createRollRequest(713210, 4, 2);
-    Request request4 = createRollRequest(813220, 6, 3);
-
-    controller.saveRolls(request1);
-    controller.saveRolls(request2);
-    controller.saveRolls(request3);
-    controller.saveRolls(request4);
+  @ParameterizedTest
+  @MethodSource("createTestData")
+  void testGetRollsWithDistribution(List<Request> requests) {
+    requests.forEach(controller::saveRolls);
 
     ResponseEntity<List<GetResult>> getWithDistResp = controller.getRolls();
 
@@ -90,7 +84,21 @@ class ApplicationTests {
           BigDecimal bigDecimal = sumDist(values);
           return bigDecimal.compareTo(new BigDecimal("100.00")) == 0;
         }).count();
-    assertEquals((int)hundredSumCount, distributions.entrySet().size());
+    assertEquals((int) hundredSumCount, distributions.entrySet().size());
+  }
+
+  private static Stream<Arguments> createTestData() {
+    return Stream.of(
+        Arguments.of(Arrays.asList(
+            createRollRequest(683209, 6, 3),
+            createRollRequest(912898, 4, 2),
+            createRollRequest(713210, 4, 2),
+            createRollRequest(813220, 6, 3))),
+        Arguments.of(Arrays.asList(
+            createRollRequest(683209, 20, 3),
+            createRollRequest(912898, 18, 2),
+            createRollRequest(713210, 18, 2),
+            createRollRequest(813220, 20, 3))));
   }
 
   @ParameterizedTest
