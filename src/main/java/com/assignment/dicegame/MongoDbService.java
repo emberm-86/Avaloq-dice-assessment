@@ -69,16 +69,14 @@ public class MongoDbService {
 
     Map<String, Map<Integer, BigDecimal>> distributionMap = new HashMap<>();
     Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToUpper = new HashMap<>();
-    Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToLower = new HashMap<>();
 
     rollsWithCount.entrySet().forEach(roll ->
-        addDistributionItem(rollsTotal, distributionMap, differencesToUpper, differencesToLower,
-            roll));
+        addDistributionItem(rollsTotal, distributionMap, differencesToUpper, roll));
 
     Map<String, BigDecimal> sums = distributionMap.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, e -> sumDist(e.getValue().values())));
 
-    correctionIfNeeded(distributionMap, differencesToUpper, differencesToLower, sums);
+    correctionIfNeeded(distributionMap, differencesToUpper, sums);
 
     return distributionMap.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey,
@@ -90,7 +88,6 @@ public class MongoDbService {
   private void addDistributionItem(Map<String, Integer> rollsTotal,
       Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToUpper,
-      Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToLower,
       Map.Entry<String, Map<Integer, Long>> allRolls) {
 
     String rollConfigurationKey = allRolls.getKey();
@@ -116,27 +113,22 @@ public class MongoDbService {
       });
 
       BigDecimal upperBound = val.setScale(DECIMAL_FORMAT_FRACTION_DIGITS, RoundingMode.CEILING);
-      BigDecimal lowerBound = val.setScale(DECIMAL_FORMAT_FRACTION_DIGITS, RoundingMode.FLOOR);
 
       calculateDifference(rollConfigurationKey, rollValueAsKey, val, differencesToUpper,
           upperBound.subtract(val));
-
-      calculateDifference(rollConfigurationKey, rollValueAsKey, val, differencesToLower,
-          val.subtract(lowerBound));
     }
   }
 
   private void correctionIfNeeded(Map<String, Map<Integer, BigDecimal>> distributionMap,
       Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToUpper,
-      Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differencesToLower,
       Map<String, BigDecimal> sums) {
 
     Comparator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> comparator = Comparator.comparing(
         s -> s.getValue().getRight());
 
     sums.entrySet().forEach(distSum -> {
-      orderAndCorrection(distributionMap, differencesToLower, distSum,
-          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, comparator);
+      orderAndCorrection(distributionMap, differencesToUpper, distSum,
+          bigDecimal -> bigDecimal.compareTo(HUNDRED) > 0, comparator.reversed());
 
       orderAndCorrection(distributionMap, differencesToUpper, distSum,
           bigDecimal -> bigDecimal.compareTo(HUNDRED) < 0, comparator);
@@ -147,6 +139,7 @@ public class MongoDbService {
       Map<String, Map<Integer, Pair<BigDecimal, BigDecimal>>> differences,
       Map.Entry<String, BigDecimal> distSum, Predicate<BigDecimal> predicate,
       Comparator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> comparator) {
+
     Map<Integer, Pair<BigDecimal, BigDecimal>> boundDists = orderBoundDists(
         differences.get(distSum.getKey()), comparator);
     Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> boundDistIt = boundDists.entrySet()
@@ -158,8 +151,10 @@ public class MongoDbService {
       Map.Entry<String, BigDecimal> distSum,
       Iterator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> distIt,
       Predicate<BigDecimal> predicate) {
+
     while (predicate.test(distSum.getValue())) {
       BigDecimal difference = NIL;
+
       if (distIt.hasNext()) {
         Entry<Integer, Pair<BigDecimal, BigDecimal>> next = distIt.next();
         BigDecimal oldDistVal = distributionMap.get(distSum.getKey()).get(next.getKey());
