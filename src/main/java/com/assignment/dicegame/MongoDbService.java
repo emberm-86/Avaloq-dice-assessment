@@ -25,13 +25,13 @@ import static com.assignment.dicegame.Constants.DECIMAL_FORMAT_FRACTION_DIGITS;
 import static com.assignment.dicegame.Constants.HUNDRED;
 import static com.assignment.dicegame.Constants.MATH_CONTEXT;
 import static com.assignment.dicegame.Constants.MATH_CONTEXT_DIFF;
-import static com.assignment.dicegame.Constants.NIL;
 import static com.assignment.dicegame.Util.calculateDifference;
 import static com.assignment.dicegame.Util.createId;
 import static com.assignment.dicegame.Util.createRollEntity;
 import static com.assignment.dicegame.Util.getListItemCount;
 import static com.assignment.dicegame.Util.orderBoundDists;
 import static com.assignment.dicegame.Util.sumDist;
+import static java.math.BigDecimal.ZERO;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.group;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -153,7 +153,7 @@ public class MongoDbService {
       Predicate<BigDecimal> predicate) {
 
     while (predicate.test(distSum.getValue())) {
-      BigDecimal difference = NIL;
+      BigDecimal difference = ZERO;
 
       if (distIt.hasNext()) {
         Entry<Integer, Pair<BigDecimal, BigDecimal>> next = distIt.next();

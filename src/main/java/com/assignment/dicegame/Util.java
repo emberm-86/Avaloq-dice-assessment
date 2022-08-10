@@ -21,12 +21,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import static com.assignment.dicegame.Constants.DECIMAL_FORMAT_FRACTION_DIGITS;
 import static com.assignment.dicegame.Constants.MATH_CONTEXT;
-import static com.assignment.dicegame.Constants.NIL;
+import static java.math.BigDecimal.ZERO;
 
 public class Util {
 
   public static BigDecimal sumDist(Collection<BigDecimal> dists) {
-    return dists.stream().reduce(NIL,
+    return dists.stream().reduce(ZERO,
         (bigDecimal, augend) -> bigDecimal.add(augend, MATH_CONTEXT)
             .setScale(DECIMAL_FORMAT_FRACTION_DIGITS, RoundingMode.DOWN));
   }
@@ -66,7 +66,7 @@ public class Util {
   public static Map<Integer, Pair<BigDecimal, BigDecimal>> orderBoundDists(
       Map<Integer, Pair<BigDecimal, BigDecimal>> differences,
       Comparator<Entry<Integer, Pair<BigDecimal, BigDecimal>>> comparator) {
-    return differences.entrySet().stream().filter(s -> s.getValue().getRight().compareTo(NIL) > 0)
+    return differences.entrySet().stream().filter(s -> s.getValue().getRight().compareTo(ZERO) > 0)
         .sorted(comparator)
         .collect(
             Collectors.toMap(Entry::getKey, Entry::getValue, (s1, s2) -> s1, LinkedHashMap::new));
